@@ -36,6 +36,9 @@ String soilHumidityLabel = "SoilHumidity,";
 char ssid[] = "Nirvana";    //  your network SSID (name) 
 char pass[] = "computer";   // your network password
 
+//char ssid[] = "rga@SF";
+//char pass[] = "";
+
 int status = WL_IDLE_STATUS;
 
 // initialize the library instance:
@@ -66,7 +69,7 @@ CosmClient cosmclient(client);
 
 unsigned long lastConnectionTime = 0;          // last time you connected to the server, in milliseconds
 boolean lastConnected = false;                 // state of the connection last time through the main loop
-const unsigned long postingInterval = 10*1000; //delay between updates to Pachube.com
+const unsigned long postingInterval = 1000; //delay between updates to Pachube.com
 
 int pumpDataBuffer = 0;  // Holds whether the pump was on since the last data transmission
 
@@ -85,9 +88,17 @@ void setup() {
   if (DEBUG_NETWORK) {
     
     while ( status != WL_CONNECTED) { 
+      
       Serial.print("Setup(): Attempting to connect to SSID: ");
       Serial.println(ssid);
-      status = WiFi.begin(ssid, pass);
+      
+      if (strcmp(pass,"")!=0) {
+        Serial.println("Password is not empty.");
+        status = WiFi.begin(ssid, pass);
+      } else {
+        Serial.println("Password is empty.");
+        status = WiFi.begin(ssid);
+      }
       // wait 10 seconds for connection:
       delay(10000);
     }
@@ -197,16 +208,16 @@ void sensorLoop()
   // Read the analog sensors
   lightSensorReading = analogRead(A0);
   soilHumiditySensorReading = analogRead(A1);  
-  
-  // Check the tresholds
-  isLowSoilHumidity = soilHumiditySensorReading < soilHumidityTresholdLow;
-  isHighSoilHumidity = soilHumiditySensorReading > soilHumidityTresholdHigh;
 
   // Read the potentiometer
   potReading = analogRead(A2);
   
   // Set the tresholds
   soilHumidityTresholdLow = map(potReading,1,1024,0,300);
+  
+  // Check the tresholds
+  isLowSoilHumidity = soilHumiditySensorReading < soilHumidityTresholdLow;
+  isHighSoilHumidity = soilHumiditySensorReading > soilHumidityTresholdHigh;
   
   dht11Loop();
   
@@ -218,7 +229,7 @@ void dht11Loop()
 
   int chk = DHT11.read(DHT11PIN);
 
-  Serial.print("Read sensor: ");
+  //Serial.print("Read sensor: ");
   switch (chk)
   {
     case DHTLIB_OK: 
@@ -256,7 +267,7 @@ const unsigned long pumpMonitorInterval = 1000;
 
 boolean isPumping = false;                       // Is the pump pumping?
 unsigned long lastPumpingTime = 0;               // Time when the pump started pumping
-const unsigned long pumpingInterval = 10000;      // How long the pump should pump
+const unsigned long pumpingInterval = 5000;      // How long the pump should pump
 
 
 void pumpLoop()
@@ -278,7 +289,7 @@ void pumpLoop()
   if (millis() - lastPumpControlTime > pumpControlInterval) 
   {
     Serial.println("pumpLoop(): command pump");
-    //printDebugInfo();
+    printDebugInfo();
     
     if (isLowSoilHumidity && !isPumping) 
     {
